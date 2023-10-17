@@ -1,33 +1,30 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #define MAX_ELEMENT 200
 
-typedef struct TreeNode
-{
+typedef struct TreeNode {
     char ch;
     int weight;
     struct TreeNode* left;
     struct TreeNode* right;
-}TreeNode;
+} TreeNode;
 
 typedef struct {
     TreeNode* ptree;
     char ch;
     int key;
-}element;
+} element;
 
 typedef struct {
     element heap[MAX_ELEMENT];
     int heap_size;
-}HeapType;
+} HeapType;
 
 HeapType* create() {
-    return (HeapType*)malloc(sizeof(HeapType));
-}
-
-void init(HeapType* h) {
+    HeapType* h = (HeapType*)malloc(sizeof(HeapType));
     h->heap_size = 0;
+    return h;
 }
 
 void print_heap(HeapType* h) { //과정 출력
@@ -37,46 +34,42 @@ void print_heap(HeapType* h) { //과정 출력
     printf("\n");
 }
 
-void insert_max_heap(HeapType* h, element item) { //삽입
+void insert_min_heap(HeapType* h, element item) {
     int i;
     i = ++(h->heap_size);
-    h->heap[i] = item;
 
-    while ((i != 1) && (item.key > h->heap[i / 2].key)) {
+    while ((i != 1) && (item.key < h->heap[i / 2].key)) {
         h->heap[i] = h->heap[i / 2];
-        h->heap[i / 2] = item;
         i /= 2;
-
     }
-
+    h->heap[i] = item;
+    print_heap(h);
 }
 
-
-element delete_max_heap(HeapType* h) { //삭제
+element delete_min_heap(HeapType* h) {
     int parent, child;
-    element item;
+    element item, temp;
 
+    item = h->heap[1];
+    temp = h->heap[(h->heap_size)--];
 
-    item = h->heap[1]; //최상위 노드
-    h->heap[1] = h->heap[(h->heap_size)--]; //최상위 노드 삭제 -> 마지막 노드를 최상위 노드로 업데이트
     parent = 1;
-    child = 2; //자식노드
-
+    child = 2;
 
     while (child <= h->heap_size) {
-        if ((child < h->heap_size) && (h->heap[child].key < h->heap[child + 1].key)) {
+        if ((child < h->heap_size) && (h->heap[child].key > h->heap[child + 1].key)) {
             child++;
-        } //왼쪽 자식보다 오른쪽 자식이 크면 자식 업데이트
-        if (h->heap[parent].key >= h->heap[child].key) break; //부모가 자식노드보다 크거나 같으면 break
+        }
+        if (temp.key <= h->heap[child].key) break;
 
-        element tmp = h->heap[parent]; //부모 노드 옮김
-        h->heap[parent] = h->heap[child]; //자식노드가 더 크면 자식 노드랑 부모 노드 위치 바꿈
-        h->heap[child] = tmp;
+        h->heap[parent] = h->heap[child];
         parent = child;
         child *= 2;
-
     }
+
+    h->heap[parent] = temp;
     return item;
+    print_heap(h);
 }
 
 TreeNode* make_tree(TreeNode* left, TreeNode* right) {
@@ -88,7 +81,7 @@ TreeNode* make_tree(TreeNode* left, TreeNode* right) {
 
 void destroy_tree(TreeNode* root) {
     if (root == NULL) return;
-    destory_tree(root->left);
+    destroy_tree(root->left);
     destroy_tree(root->right);
     free(root);
 }
@@ -97,8 +90,67 @@ int is_leaf(TreeNode* root) {
     return !(root->left) && !(root->right);
 }
 
+void print_array(int codes[], int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%d ", codes[i]);
+    }
+}
+
 void print_codes(TreeNode* root, int codes[], int top) {
     if (root->left) {
         codes[top] = 1;
+        print_codes(root->left, codes, top + 1);
     }
+
+    if (root->right) {
+        codes[top] = 0;
+        print_codes(root->right, codes, top + 1);
+    }
+
+    if (is_leaf(root)) {
+        printf("%c: ", root->ch);
+        print_array(codes, top);
+        printf("\n");
+    }
+}
+
+void huffman_tree(int freq[], char ch_list[], int n) {
+    int i;
+    TreeNode* node, * x;
+    HeapType* heap;
+    element e, e1, e2;
+    int codes[100];
+    int top = 0;
+
+    heap = create();
+
+    for (i = 0; i < n; i++) {
+        node = make_tree(NULL, NULL);
+        e.ch = node->ch = ch_list[i];
+        e.key = node->weight = freq[i];
+        e.ptree = node;
+        insert_min_heap(heap, e);
+    }
+    for (i = 1; i < n; i++) {
+        e1 = delete_min_heap(heap);
+        e2 = delete_min_heap(heap);
+
+        x = make_tree(e1.ptree, e2.ptree);
+        e.key = x->weight = e1.key + e2.key;
+        e.ptree = x;
+        printf("///%d + %d -> %d\n", e1.key, e2.key, e.key);
+        insert_min_heap(heap, e);
+    }
+
+    e = delete_min_heap(heap);
+    print_codes(e.ptree, codes, top);
+    destroy_tree(e.ptree);
+    free(heap);
+}
+
+int main() {
+    char ch_list[] = { 'a', 'e', 'i', 'o', 'u', 's', 't' };
+    int freq[] = { 10, 15, 12, 3, 4, 13, 1 };
+    huffman_tree(freq, ch_list, 7);
+    return 0;
 }
